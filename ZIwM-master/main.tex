@@ -1,0 +1,824 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+
+\usepackage{enumitem}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{longtable}
+\usepackage{polski}
+\usepackage{multirow}
+\usepackage[margin=2.5cm]{geometry}
+
+
+\newcommand{\linia}{\rule{\linewidth}{0.4mm}}
+
+\title{Komputerowe wspomaganie diagnozowania białaczek u dzieci \\z wykorzystaniem drzewa decyzyjnego}
+\author{Wojciech Czarnecki \hspace{.2cm} 235714\\ Piotr Stachnio \hspace{.9cm} 241268\\}
+% Title page layout (fold)
+\makeatletter
+\renewcommand{\maketitle}{
+\begin{titlepage}		
+
+	\vspace{2cm}
+
+	\centering\huge Politechnika Wrocławska\\
+	\vspace{0.3cm}
+	\centering\LARGE Wydział Elektroniki\\
+	
+	\vspace{2cm}
+	
+	\noindent\linia
+	\begin{center}	
+		\huge \textsc{Zastosowania informatyki w medycynie}\\
+		\vspace{0.3cm}
+		\LARGE \@title\\	
+	\end{center}
+	\linia
+
+	\begin{center}
+		\vspace{3cm}
+		\textbf{\Large Autorzy:}\\
+			\Large\@author \hspace{.3cm}
+	\end{center}
+
+	\begin{center}
+		\vspace{2cm}	
+		\textbf{\Large Prowadzący:}\\
+		\Large Dr inż. Mariusz Topolski\\
+	\end{center}
+
+	\begin{center}
+		\vspace{2cm}	
+		\textbf{\Large Termin zajęć: Piątek N 13:15}\\
+	\end{center}
+	
+	\end{titlepage}%
+}
+\usepackage{natbib}
+\usepackage{graphicx}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+\section{Opis problemu medycznego jako zadania klasyfikacji oraz wyznaczenie rankingu
+cech pod względem ich przydatności}
+
+\subsection{Opis projektu}
+\quad Celem realizowanego przez nas projektu jest nabycie umiejętności zastosowania algorytmu klasyfikacji nadzorowanej (w naszym przypadku algorytmu drzewa decyzyjnego) w zadaniu diagnozowania białaczek u dzieci. Ten proces wymaga odpowiedniego wyselekcjonowania cech, dzięki którym będzie można rozpoznać chorobę u pacjenta. Dzięki danym rzeczywistym będzie można ocenić w przyszłości skuteczność wykorzystanego\\ w tym projekcie algorytmu i sprawdzić, w jaki sposób jakość klasyfikacji zależy od liczby atrybutów wykorzystanych do skonstruowania modelu.\\
+\\Wyszczególniliśmy następujące etapy realizacji projektu:
+\begin{enumerate}
+    \item Zapoznanie się z algorytmem drzew decyzyjnych.
+    \item Zapoznanie się z danymi rzeczywistymi - analiza danych wejściowych, określenie liczby i znaczenia klas oraz dokonanie charakterystyki i znaczenia cech.
+    \item Opracowanie sposobu wyznaczania rankingu cech z wykorzystaniem aplikacji \texttt{Tibco Statistica 13}.
+    \item Zaplanowanie badań eksperymentalnych i implementacja algorytmu klasyfikacji.
+    \item Przeprowadzenie badań eksperymentalnych.
+    \item Analiza wyników badań i wyciągnięcie wniosków.
+    \item Przygotowanie dokumentacji projektu.\\\\
+\end{enumerate}{}
+
+\subsection{Charakterystyka analizowanego problemu medycznego}
+\quad Do badań wykorzystamy dane przekazane przez prowadzącego, które zawierają następujące informacje:
+\begin{itemize}{}
+    \item Istnieje 410 pacjentów ze zdiagnozowaną chorobą białaczki,
+    \item Pacjenci zostali przypisani do jednej z 20 klas chorobowych oznaczających typy białaczki,
+    \item Każdy z pacjentów został zbadany przez lekarza i opisany za pomocą 20 cech,
+    \item Każda cecha jest typu binarnego lub dyskretnego co oznacza, że przyjmuje wartości z określonego zbioru wartości.\\\\
+\end{itemize}
+
+Większość cech ma charakter binarny, czyli posiada tylko dwie wartości (w tym przypadku 1 lub 2), np. temperatura, stopień krwawienia czy liczba płytek krwi. Jest to najprostsza odmiana atrybutu kategorycznego. W zbiorze cech znaleźć można też kilka cech kategorycznych, które przyjmować mogą kilka wartości z grupy możliwych opcji, np. anemia, miejsce krwawienia lub informacja o głównych komórkach w szpiku.
+
+W przedstawionej na następnej stronie tabeli \ref{tab:tabela_cech} znajdują się te właśnie cechy oraz ich charakter, na podstawie których można ocenić to, czy pacjent jest lub nie chory na białaczkę.
+
+\newpage
+
+\subsection{Zestaw badanych cech}
+
+
+\begin{center}
+	\begin{longtable}{ |c|c|c|c| } 
+	\caption{Zestaw badanych cech i ich wartości}
+	\label{tab:tabela_cech}\\
+	\hline
+L.p.                & Nazwa cechy                                         & Przyjmowane wartości                  & Charakter cechy            \\ \hline
+\multirow{2}{*}{1}  & \multirow{2}{*}{Temperatura}                        & 1 - regularna                         & \multirow{2}{*}{binarna}   \\
+                    &                                                     & 2 - nieregularna                      &                            \\ \hline
+\multirow{3}{*}{2}  & \multirow{3}{*}{Anemia}                             & 1 - średnia                           & \multirow{3}{*}{dyskretna} \\
+                    &                                                     & 2 - średnio-ciężka                    &                            \\
+                    &                                                     & 3 - ciężka                            &                            \\ \hline
+3                   & Stopień krwawienia                                  & 1 - mały, 2 - duży                    & binarna                    \\ \hline
+\multirow{8}{*}{4}  & \multirow{8}{*}{Miejsce krwawienia}                 & 1 - skóra                             & \multirow{8}{*}{dyskretna} \\
+                    &                                                     & 2 - jama ustna                        &                            \\
+                    &                                                     & 3 - jama nosowa                       &                            \\
+                    &                                                     & 4 - krwawienie do siatkówki oka       &                            \\
+                    &                                                     & 5 - drogi oddechowe                   &                            \\
+                    &                                                     & 6 - przewód moczowy                   &                            \\
+                    &                                                     & 7 - przewód trawienny                 &                            \\
+                    &                                                     & 8 - mózg                              &                            \\ \hline
+5                   & Bóle kości                                          & 1 - tak, 2 - nie                      & binarna                    \\ \hline
+6                   & Wrażliwość mostka                                   & 1 - tak, 2 - nie                      & binarna                    \\ \hline
+\multirow{2}{*}{7}  & \multirow{2}{*}{Powiększenie węzłów chłonnych}      & 1 - nieznaczne                        & \multirow{2}{*}{binarna}   \\
+                    &                                                     & 2 - silne                             &                            \\ \hline
+\multirow{2}{*}{8}  & \multirow{2}{*}{Powiększenie wątroby i śledziony}   & 1 - nieznaczne                        & \multirow{2}{*}{binarna}   \\
+                    &                                                     & 2 - silne                             &                            \\ \hline
+\multirow{2}{*}{9}  & Centralny układ nerwowy                             & 1 - tak                               & \multirow{2}{*}{binarna}   \\
+                    & (ból głowy, wymioty, drgawki, senność, śpiączka)    & 2 - nie                               &                            \\ \hline
+10                  & Powiększenie jąder                                  & 1 - tak, 2 - nie                      & binarna                    \\ \hline
+11                  & Uszkodzenie w sercu, płucach, nerce                 & 1 - tak, 2 - nie                      & binarna                    \\ \hline
+\multirow{2}{*}{12} & Gałka oczna (zaburzenia w widzeniu,                 & 1 - tak                               & \multirow{2}{*}{binarna}   \\
+                    & krwawienie do siatkówki, wytrzeszcz oczu)           & 2 - nie                               &                            \\ \hline
+\multirow{3}{*}{13} & \multirow{3}{*}{Poziom WBC (leukocytów)}            & 1 - powiększony                       & \multirow{3}{*}{dyskretna} \\
+                    &                                                     & 2 - obniżony                          &                            \\
+                    &                                                     & 3 - normalny                          &                            \\ \hline
+\multirow{3}{*}{14} & \multirow{3}{*}{Obniżenie liczby RBC (erytrocytów)} & 1 - lekkie                            & \multirow{3}{*}{dyskretna} \\
+                    &                                                     & 2 - średnie                           &                            \\
+                    &                                                     & 3 - duże                              &                            \\ \hline
+\multirow{2}{*}{15} & \multirow{2}{*}{Liczba płytek krwi}                 & 1 - obniżone                          & \multirow{2}{*}{binarna}   \\
+                    &                                                     & 2 - normalne                          &                            \\ \hline
+\multirow{2}{*}{16} & \multirow{2}{*}{Niedojrzałe komórki (blastyczne)}   & 1 - istnieją                          & \multirow{2}{*}{binarna}   \\
+                    &                                                     & 2 - nie istnieją                      &                            \\ \hline
+\multirow{3}{*}{17} & \multirow{3}{*}{Stan pobudzenia szpiku}             & 1 - krańcowo czynny                   & \multirow{3}{*}{dyskretna} \\
+                    &                                                     & 2 - średnio czynny                    &                            \\
+                    &                                                     & 3 - czynny                            &                            \\ \hline
+\multirow{3}{*}{18} & \multirow{3}{*}{Główne komórki w szpiku}            & 1 - prymitywne i niedojrzałe          & \multirow{3}{*}{dyskretna} \\
+                    &                                                     & 2 - wcześniej niedojrzałe granulocyty &                            \\
+                    &                                                     & 3 - dojrzałe                          &                            \\ \hline
+\multirow{3}{*}{19} & \multirow{3}{*}{Poziom limfocytów}                  & 1 - duży                              & \multirow{3}{*}{dyskretna} \\
+                    &                                                     & 2 - niski                             &                            \\
+                    &                                                     & 3 - nieregularny                      &                            \\ \hline
+\multirow{2}{*}{20} & \multirow{2}{*}{Reakcja}                            & 1 - negatywna                         & \multirow{2}{*}{binarna}   \\
+                    &                                                     & 2 - pozytywna                         &                            \\ \hline
+		
+	\end{longtable}
+\end{center}
+
+\subsection{Zestaw badanych klas}
+W poniższej tabeli \ref{tab:tabela_klas} znajduje się dwadzieścia klas oznaczających daną chorobę u pacjenta:
+
+\begin{center}
+	\begin{longtable}{ |c|p{7cm}|c| } 
+	\caption{Zestaw badanych klas i ilość chorych}
+		\label{tab:tabela_klas}\\
+		\hline
+			Numer klasy & Nazwa klasy & Ilość chorych \\
+		\hline
+			1 & Postać nie T I nie B (L1 - type) & 24 \\
+		\hline	
+			2 & Postać T (L2 - type) & 19 \\
+		\hline	
+			3 & Postać B (L3 - type) & 27 \\
+		\hline
+			4 & Mieloblastyczna o niskim niezróżnicowaniu & 18 \\
+		\hline	
+			5 & Mieloblastyczna z dojrzewaniem & 22 \\
+		\hline	
+			6 & Promielocytowa & 17 \\
+		\hline	
+			7 & Mielomonoblastyczna & 22 \\
+		\hline	
+			8 & Monoblastyczna & 20 \\
+		\hline	
+			9 & Cytoeukemia & 26 \\
+		\hline	
+			10 & Podostra granulocytarna & 16 \\
+		\hline	
+			11 & Granulocytarna & 24 \\
+		\hline	
+			12 & Limfocytarna & 21 \\
+		\hline	
+			13 & Mielomonocytarna & 17 \\
+		\hline	
+			14 & Monocytarna & 26 \\
+		\hline	
+			15 & Chłoniak limfatyczny białaczka  & 18 \\
+		\hline	
+			16 & Plazmocytowa & 17 \\
+		\hline	
+			17 & Wielokapilarnokomórkowa & 16 \\
+		\hline	
+			18 & Eozynofilowa & 21 \\
+		\hline	
+			19 & Bazofilowa & 23 \\
+		\hline	
+			20 & Białaczka komórek wielkojądrzastych  & 16 \\
+		\hline
+		
+	\end{longtable}
+\end{center}
+
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=12cm]{Wykres_ 1.PNG}
+    \caption{Zależność ilości przypadków białaczki od jej typu.}
+    \label{fig:klasy}
+\end{figure}
+\newpage
+
+\subsection{Stworzenie rankingu cech}
+
+\quad Selekcja cech jest kluczowym problemem w modelowaniu obiektów, procesów i zjawisk, istotnym w rozpoznawaniu obrazów, uczeniu maszynowym, eksploracji danych i w sztucznej inteligencji. Celem selekcji cech jest redukcja wymiaru wektora wejściowego (obrazu) poprzez znalezienie podzbioru cech (zmiennych) opisujących obiekt w najlepszy sposób i zapewniających najwyższą jakość modelu (np. klasyfikatora, aproksymatora). Cechy nie przenoszące informacji, nieistotne lub nadmiarowe zostają wyeliminowane. Spodziewanym rezultatem selekcji cech jest redukcja „przekleństwa wymiarowości”, poprawa dokładności i uproszczenie modelu, poprawa generalizacji, skrócenie czasu konstrukcji modelu oraz redukcja kosztu pozyskania danych. [1]
+
+Do uzyskania rankingu cech wykorzystano algorytm chi-kwadrat ($\chi^2$). Test istotności chi-kwadrat dokonuje weryfikacji zakładanej hipotezy, która zakłada, że pewne cechy zbioru A oraz zbioru B są niezależne statystycznie.
+
+Test $\chi^2$ może być zastosowany przy badaniach współzależności dwóch zmiennych. Aby przyjąć określone hipotezy pozwala on zweryfikować czy dana zbiorowość statystyczna ma właściwy typ rozkładu, czy cechy poddane analizie statystycznej posiadają wymaganą współzależność. Inaczej ujmując za pomocą testu $\chi^2$ można ustalić prawdopodobieństwo wystąpienia zjawiska x, gdy zaistnieje zjawisko y i na odwrót. [2]
+
+Wartość funkcji chi-kwadrat oblicza się według poniższego wzoru:
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=10cm]{wzor_chi_kwadrat.PNG}
+    \label{fig:chi2}
+\end{figure}
+
+r - liczba przedziałów klasowych\\
+n - liczba obserwacji\\
+np{\tiny i} - liczba jednostek, które powinny znaleźć się w i-tym przedziale przy założeniu, że cecha ma rozkład zgodny z hipotezą zerową. [3]\\
+
+Ranking cech został stworzony w aplikacji \texttt{Tibco Statistica 13} na podstawie danych o wszystkich obiektach i znajduje się w poniższej tabeli \ref{tab:ranking_cech}.
+\begin{center}
+	\begin{longtable}{ |c|l|c| } 
+	\caption{Wartość statystyki chi-kwadrat dla poszczególnych cech}
+		\label{tab:ranking_cech}\\
+		\hline
+			Numer cechy & Nazwa cechy & Wartość $\chi^2$ \\
+		\hline
+			4 & Miejsce krwawienia & 187,43 \\
+		\hline	
+			19 & Poziom limfocytów & 53,43 \\
+		\hline	
+			18 & Główne komórki w szpiku & 37,61 \\
+		\hline	
+			14 & Obniżenie liczby RBC (erytrocytów) & 36,34 \\
+		\hline	
+			2 & Anemia & 35,16 \\
+		\hline	
+			6 & Wrażliwość mostka & 31,84 \\
+		\hline	
+			1 & Temperatura & 30,63 \\
+		\hline	
+			16 & Niedojrzałe komórki (blastyczne) & 28,26 \\
+		\hline	
+			10 & Powiększenie jąder & 26,62 \\
+		\hline	
+			3 & Stopień krwawienia & 26,26 \\
+		\hline	
+			7 & Powiększenie węzłów chłonnych & 25,78 \\
+		\hline	
+			5 & Bóle kości & 23,46 \\
+		\hline	
+			17 & Stan pobudzenia szpiku & 21,55 \\
+		\hline	
+			15 & Liczba płytek krwi & 20,26 \\
+		\hline	
+			11 & Uszkodzenie w sercu, płucach, nerce & 20,08 \\
+		\hline	
+			9 & Centralny układ nerwowy (ból głowy, wymioty, drgawki, senność, śpiączka) & 17,23 \\
+		\hline	
+			12 & Gałka oczna (zaburzenia w widzeniu, krwawienie do siatkówki, wytrzeszcz oczu) & 16,04 \\
+		\hline	
+			8 & Powiększenie wątroby i śledziony & 15,99 \\
+		\hline	
+			13 & Poziom WBC (leukocytów) & 14,47 \\
+		\hline	
+			20 & Reakcja & 14,47 \\
+		\hline
+		
+	\end{longtable}
+\end{center}
+
+Dla sprawdzenia, czy ranking cech został wygenerowany poprawnie na podstawie testu $\chi^2$, wykorzystano również metodę drzew klasyfikacyjnych. Uzyskano go w następujący sposób: Zakładka Statystyka => Analizy wielowymiarowe => Drzewa klasyfikacyjne. Następnie wybrano zmienną zależną/grupującą (klasę) i zmienne niezależne(predyktory ilościowe), czyli wartości cech.\\ 
+
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=15cm]{Ranking_cech.png}
+    \caption{Ranking cech uzyskany na podstawie metody drzew.}
+    \label{fig:ranking}
+\end{figure}
+\newpage
+Na podstawie macierzy korelacji uzyskanych w programie \texttt{Tibco Statistica 13} określono również wartości p dla każdej cechy, które posortowano malejąco. Uzyskano je w następujący sposób: Zakładka Statystyka => Statystyki podstawowe => Macierze korelacji => Dwie listy zmiennych. Następnie wybrano zmienne niezależne(predyktory ilościowe), czyli wartości cech jako pierwsza lista i zmienną zależną jako druga lista. Następnie wybrano Opcje => Wyświetl r. p i N => Podsumowanie.\\ 
+\begin{center}
+	\begin{longtable}{ |c|l|c| } 
+	\caption{Wartość p dla poszczególnych cech}
+		\label{tab:ranking_cech_wartosc_p}\\
+		\hline
+			Numer cechy & Nazwa cechy & Wartość p \\
+		\hline
+			18 & Główne komórki w szpiku & 0,964 \\
+		\hline	
+			7 & Powiększenie węzłów chłonnych & 0,900 \\
+		\hline	
+			15 & Liczba płytek krwi & 0,875 \\
+		\hline	
+			1 & Temperatura & 0,737 \\
+		\hline	
+			6 & Wrażliwość mostka & 0,702 \\
+		\hline	
+			14 & Obniżenie liczby RBC (erytrocytów) & 0,518 \\
+		\hline	
+			10 & Powiększenie jąder & 0,480 \\
+		\hline	
+			8 & Powiększenie wątroby i śledziony & 0,249 \\
+		\hline	
+			5 & Bóle kości & 0,229 \\
+		\hline	
+			3 & Stopień krwawienia & 0,216 \\
+		\hline	
+			13 & Poziom WBC (leukocytów) & 0,054 \\
+		\hline	
+			20 & Reakcja & 0,054 \\
+		\hline	
+			16 & Niedojrzałe komórki (blastyczne) & 0,010 \\
+		\hline	
+			19 & Poziom limfocytów & 0,009 \\
+		\hline	
+			11 & Uszkodzenie w sercu, płucach, nerce & 0,004 \\
+		\hline	
+			9 & Centralny układ nerwowy (ból głowy, wymioty, drgawki, senność, śpiączka) & 0,004 \\
+		\hline	
+			2 & Anemia & 0,000 \\
+		\hline	
+			4 & Miejsce krwawienia & 0,000 \\
+		\hline	
+			12 & Gałka oczna (zaburzenia w widzeniu, krwawienie do siatkówki, wytrzeszcz oczu) & 0,000 \\
+		\hline	
+			17 & Stan pobudzenia szpiku & 0,000 \\
+		\hline
+	\end{longtable}
+\end{center}
+\newpage
+
+\section{Implementacja środowiska eksperymentowania}
+\subsection{Przygotowanie środowiska eksperymentalnego}
+\quad Zaimplementowane przez nas środowisko eksperymentalne powstało w oparciu o język programowania \texttt{Python} w wersji 3.9.0 wspomagany bibliotekami \texttt{pandas} oraz \texttt{sklearn}. Zgodnie z poleceniem, klasyfikatorem użytym przez nas jest klasa \texttt{DecisionTreeClassifier} z biblioteki \texttt{scikit-learn}. Jako początkową maksymalną głębokość drzewa wyznaczono wartość 3, a jako początkowe kryterium podziału wartość \texttt{gini}. 
+
+Poniżej znajdują się parametry, dla których zostaną przeprowadzone badania eksperymentalne.
+
+\begin{itemize}
+    \item Typy kategoryzacji - \texttt{GINI, ENTROPY}
+    \item Liczba cech - \texttt{[1, 20]}
+    \item Głębokość drzewa - \texttt{[3,5,7]}
+\end{itemize}
+
+\subsection{Walidacja krzyżowa}
+\quad Walidacja krzyżowa polega na losowym podziale zbioru danych na N (najczęściej przyjmuje się N = 10) w miarę równo rozłożonych części (tzn. foldów). Walidacja odbywa się poprzez N-krotne wyuczenie klasyfikatora na zbiorze składającym się N - 1 części i przetestowaniu go na N-tej, niewykorzystanej w uczeniu części. Istotą tej metodyki testowania jest to, że w każdym kroku proces testowania odbywa się na innej części zbioru, a każda obserwacja ze zbioru będzie dokładnie raz przetestowana w procesie walidacji. Przykład działania metody walidacji krzyżowej (dla 4 foldów) pokazuje poniższy rysunek:
+
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=10cm]{Walidacja krzyzowa n.PNG}
+    \caption{Przykład walidacji krzyżowej dla 4 foldów.}
+    \label{fig:walidacja1}
+\end{figure}
+
+W pierwszym kroku (n=1) klasyfikator jest uczony z wykorzystaniem elementów 1,2,3 (kolor niebieski), a testowanie odbywa się na elemencie 4 (kolor czerwony). W następnym kroku (n=2) do testowania brany jest zbiór, który nie był jeszcze testowany, przykładowo ten o indeksie 3, a pozostałe części wykorzystywane są do uczenia. Proces jest powtarzany do momentu, w którym każda z części nie zostanie wykorzystana do testowania.[4]
+\newpage
+W tym zadaniu należało przeprowadzić 5 razy powtórzoną 2-krotną walidację krzyżową. Podzielono zbiór uczący na N=2 części, a następnie każdy z foldów wykorzystywany jest jako zbiór uczący (dane treningowe), a drugi jako zbiór testowy (dane walidacyjne). Podział ten pokazano na poniższym rysunku:
+
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=10cm]{Walidacja krzyzowa.PNG}
+    \caption{Podział zbioru danych.}
+    \label{fig:walidacja2}
+\end{figure}
+
+\subsection{Implementacja walidacji krzyżowej}
+Do przeprowadzenia walidacji krzyżowej wykorzystano funkcję biblioteki \texttt{scikit-learn} o nazwie \texttt{cross\_val\_score}. Parametry tej funkcji zostały pokazane na poniższym listingu:\\
+\begin{lstlisting} [caption={Parametry funkcji cross\_val\_score},captionpos=b]
+sklearn.model_selection.cross_val_score(estimator, X, y=None, *, groups=None, 
+scoring=None, cv=None, n_jobs=None, verbose=0, fit_params=None, pre_dispatch='2*n_jobs',
+error_score=nan)
+\end{lstlisting}
+
+Do programu wczytywany jest plik .xls, z którego pobierane są dane dotyczące klas (różnych typów białaczek) i przynależących do nich wartości cech ustawionych w ranking. Dane te algorytm dzieli na dane przeznaczone do nauki oraz dane przeznaczone do testowania za pomocą funkcji \texttt{train\_test\_split}. Są one przypisywane do obu zbiorów losowo. Jest to potrzebne do tego, aby uniknąć zjawiska \texttt{overfittingu}, które powoduje, że algorytm zamiast uczyć się, to "zapamiętuje" zbiór testowy.\\
+
+\begin{lstlisting} [caption={Parametry funkcji train\_test\_split},captionpos=b]
+sklearn.model_selection.train_test_split(*arrays, test_size=None, train_size=None, 
+random_state=None, shuffle=True, stratify=None)
+\end{lstlisting}
+
+Następnie algorytm wykonuje dla dwóch wybranych rodzajów kategoryzacji (\texttt{Gini Impurity} oraz \texttt{Entropy}) naukę oraz testowanie dla drzewa \texttt{CART} o kolejnych maksymalnych jego głębokościach: 3, 5 oraz 7. Po wykonaniu algorytm zwraca dokładność, z jaką zostały zdiagnozowane kolejne typy białaczki. Wyświetlany jest również numer klasy, do której algorytm zakwalifikował dany przypadek.
+
+\newpage
+Na poniższym rysunku znajduje się pseudokod przedstawiający działanie opisanego powyżej algorytmu.
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=15cm]{Pseudokod.PNG}
+    \caption{Pseudokod dla algorytmu klasyfikacji CART.}
+    \label{fig:pseudokod}
+\end{figure}
+
+\newpage
+
+Na poniższym zrzucie ekranu pokazano działanie opisanego powyżej algorytmu.
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=15cm]{Wyniki ekseprymentu Python.png}
+    \caption{Działanie środowiska eksperymentalnego w języku Python.}
+    \label{fig:aplikacja}
+\end{figure}
+
+\subsection{Implementacja parowego testu t-studenta}
+\quad Testy t-Studenta służą do porównania ze sobą dwóch grup, nie więcej. Korzystamy z nich wtedy, gdy mamy wyniki dla dwóch grup i chcemy porównać je ze sobą, tzn. stwierdzić, czy wyniki w jednej grupie są większe bądź mniejsze niż w drugiej grupie. Nie można porównywać ze sobą kilku grup, wykonując kilkukrotnie test t-Studenta. Jeżeli mamy więcej niż 2 grupy to musimy skorzystać z innych testów statystycznych.
+
+Do implementacji testu t-studenta wykorzystano funkcję biblioteki \texttt{scipy.stats} o nazwie \texttt{ttest\_ind}. Parametry tej funkcji zostały pokazane na poniższym listingu:\\
+
+\begin{lstlisting} [caption={Parametry funkcji ttest\_ind},captionpos=b]
+scipy.stats.ttest_ind(a, b, axis=0, equal_var=True, nan_policy='propagate',
+alternative='two-sided')
+\end{lstlisting}
+
+\newpage
+
+\section{Opis algorytmu klasyfikacji}
+\subsection{Algorytm drzewa decyzyjnego}
+\quad Drzewo decyzyjne to graficzny sposób wspierania procesu decyzyjnego. Drzewo stosowane jest w teorii decyzji i ma sporo zastosowań. Może zarówno rozwiązać problem decyzyjny, jak i stworzyć plan. Metoda drzew decyzyjnych sprawdza się przede wszystkim, kiedy mamy problemy decyzyjne z wieloma rozgałęziającymi się wariantami oraz kiedy podejmujemy decyzję w warunkach ryzyka. Drzewa znalazły zastosowanie w takich dziedzinach jak botanika i medycyna.
+
+ Technika drzew decyzyjnych pozwala na wyznaczenie zasad decyzyjnych opisujących reguły przypisywania obiektów do wyróżnionych klas oraz analizowanie zbioru obiektów opisywanych przez przyjęty zestaw atrybutów. Celem analizy jest doskonalenie podziału obiektów na jednorodne klasy, gdzie metoda dokonywania podziału ma charakter hierarchiczny. Punktem wyjścia jest zbiór zawierający wszystkie analizowane obiekty. W trakcie analizy jest on dzielony na określoną liczbę podzbiorów. W kolejnych krokach każdy z podzbiorów podlega dalszemu podziałowi, a na końcu analizy każdy obiekt stanowi oddzielną klasę.
+ 
+ \begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=8cm]{drzewo.jpg}
+    \caption{Schemat drzewa decyzyjnego.}
+    \label{fig:drzewo}
+\end{figure}
+ 
+ Drzewem decyzyjnym jest graf - drzewo, które składa się z korzenia, węzłów, krawędzi oraz liści. Liście to węzły, z których nie wychodzą już żadne krawędzie. Korzeń drzewa tworzony jest przez wybrany atrybut, natomiast poszczególne gałęzie reprezentują wartości tego atrybutu. Dzięki drzewu decyzyjnemu, zbudowanemu na podstawie danych empirycznych, można sklasyfikować nowe obiekty, które nie brały udziału w procesie tworzenia drzewa. Drzewa decyzyjne charakteryzują się strukturą hierarchiczną. Oznacza to, że w kolejnych krokach dzieli się zbiór obiektów, poprzez odpowiedzi na pytania o wartości wybranych cech lub ich kombinacji liniowych. Ostateczna decyzja zależy od odpowiedzi na wszystkie pytania. W algorytmach konstrukcji drzew jednym z kluczowych elementów jest wybór kolejności cech, według których, na poszczególnych etapach, będzie dokonywany podział zbioru obiektów.
+ 
+ Ogólną zasadę konstrukcji drzew decyzyjnych można opisać w następujący sposób:
+\begin{enumerate}
+    \item Zbadanie, czy zbiór obiektów jest jednorodny. Jeśli jest, algorytm kończy pracę. Jeśli nie, to wykonywana jest dalsza część algorytmu.
+    \item Rozpatrywanie wszystkich możliwych podziałów zbioru obiektów na podzbiory oraz określenie, który z podziałów tworzy najbardziej jednorodne zbiory.
+    \item Podział zbioru w najlepszy sposób ze względu na przyjęte kryterium.
+    \item Użycie powyższego algorytmu do wszystkich podzbiorów.
+    \item Kategoryzacja drzewa, czyli likwidacja fragmentów drzewa o małym znaczeniu dla jakości rezultatów klasyfikacji.
+    \item Zastosowanie drzewa do klasyfikacji nowych obiektów.[5]\\\\
+\end{enumerate}{}
+\newpage
+
+\subsection{Algorytm CART}
+\quad Opracowana w 1984 roku metoda \texttt{CART (Classification and regression trees)} jest
+nadal bardzo popularna i szeroko stosowana. Drzewa decyzyjne tworzone przez ten algorytm
+są binarne i zawierają dokładnie dwie gałęzie w każdym z węzłów.
+
+\texttt{CART} może być stosowane zarówno do danych ciągłych jak i dyskretnych. W
+przypadku danych ciągłych stosuje się technikę zbliżoną do tej z algorytmu C4.5 - rozpatruje
+się wszystkie podziały na dwa przedziały zdeterminowane punktem podziału \textsl{a}. [6]
+
+Metoda CART związana jest z dwoma typami drzew:
+\begin{itemize}{}
+    \item Drzewa klasyfikacyjne wykorzystuje się do wyznaczania przynależności przypadków lub obiektów do klas jakościowej zmiennej zależnej na podstawie pomiarów jednej lub więcej zmiennych objaśniających (predyktorów). Analiza drzew klasyfikacyjnych jest jedną z podstawowych technik wykorzystywanych w tzw. Zgłębianiu danych (Data Mining). [7]
+    \item Drzewa regresyjne znajdują szerokie zastosowanie w zadaniach związanych z poststratyfikacją, prognozowaniem oraz segmentacją. Są również bardzo użyteczną techniką eksploracji zbioru danych, odkrywania struktury związków pomiędzy zmiennymi i poszukiwania najlepszych predyktorów. Za pomocą czytelnych reguł, zwizualizowanych w formie przypominającej drzewo, zbiór danych dzielony jest na mniejsze segmenty o różniącej się od siebie średniej wartości zmiennej przewidywanej. Sprawia to, że drzewa regresyjne znakomicie sprawdzają się podczas szacowania wartości klienta, prognozowaniu wartości zakupów, czy też czasu spędzanego na stronie internetowej. Dzięki swoim właściwościom mogą stanowić rozszerzenie możliwości regresji liniowej czy też analizy wariancji. [8]
+    
+\end{itemize}
+
+Aby rozwiązać badany problem komputerowego wspomagania diagnozowania białaczek u dzieci z wykorzystaniem drzewa decyzyjnego wykorzystano klasę \texttt{DecisionTreeClassifier} z biblioteki \texttt{scikit-learn}. Konstruktor tej klasy został pokazany na poniższym listingu:\\
+\begin{lstlisting} [caption={Konstruktor klasy DecisionTreeClassifier},captionpos=b]
+class sklearn.tree.DecisionTreeClassifier(*, criterion='gini', splitter='best', 
+max_depth=None, min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, 
+max_features=None, random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0,
+min_impurity_split=None, class_weight=None, ccp_alpha=0.0)
+\end{lstlisting}
+
+\texttt{DecisionTreeClassifier} to klasa zdolna do wykonywania klasyfikacji wielu klas w zbiorze danych. Podobnie jak w przypadku innych klasyfikatorów, klasa \texttt{DecisionTreeClassifier} przyjmuje jako dane wejściowe dwie tablice: tablicę X w postaci \texttt{(n\_samples, n\_features)} przechowującą próbki uczące oraz tablicę Y wartości całkowitych, w postaci \texttt{(n\_samples,)}, zawierającą etykiety klas dla próbek uczących.
+
+
+\newpage
+\subsection{Kryteria podziału drzewa}
+\quad Drzewa decyzyjne mają postać struktury rozwijającej się w drzewo, gdzie każdy wewnętrzny węzeł (nie dotyczy liścia) oznacza test na atrybucie, każda gałąź drzewa reprezentuje wynik tego testu, natomiast każdy liść (końcowy element drzewa) zawiera przynależność do danej klasy. 
+
+Pierwszy węzeł drzewa nosi nazwę korzenia. Algorytm tworzy strukturę na podstawie wektorów wejściowych reprezentujących atrybuty wejściowe i decyzyjne oraz algorytmu określającego kryterium podziału. Po utworzeniu węzła, decyduje się o jego przeznaczeniu. Jeżeli dany węzeł posiada wektory danych tej samej klasy, wówczas oznaczany jest jako liść drzewa. W przeciwnym przypadku wyznaczone zostaje kryterium podziału oraz punkt podziału na podstawie obranego algorytmu podziału. Następnie tworzy się nowe węzły pod aktualnym. 
+
+Kryterium \texttt{Giniego} bazuje na pomiarze „zanieczyszczenia” partycji D, która zawiera zbiór wektorów danych wejściowych, co można przedstawić za pomocą poniższego wzoru: 
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=10cm]{wzor_gini.PNG}
+    \label{fig:gini}
+\end{figure}
+
+p{\tiny i} - prawdopodobieństwo obliczane według wzoru |C{\tiny i,d} |/|D| \\
+C{\tiny i,d} - zbiór próbek należących do i-klasy\\
+D - zbiór wszystkich próbek w danym węźle\\\\
+
+Dla każdego atrybutu testowane są wszystkie z możliwych podziałów. Dla atrybutów dyskretnych podzbiór,  który uzyska najmniejszą wartość wskaźnika Giniego z przedziału [0,1]dla wybranego atrybutu jest wybrany jako kryterium podziału. W przypadku atrybutów ciągłych testuje się punkty podziału pomiędzy każdą parą posortowanych wartości atrybutu, dzięki któremu uzyskujemy punkt podziału.
+
+Kryterium \texttt{entropii} bazuje na teorii informacji, która dotyczy zawartości informacyjnej w danych. Węzeł N zawiera wektory danych partycji D. Atrybut z największą zawartością informacyjną jest wybrany jako atrybut podziału dla węzła N i można przedstawić za pomocą poniższego wzoru:
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=12cm]{wzor_entropy.PNG}
+    \label{fig:entropy}
+\end{figure}
+
+p{\tiny i} - prawdopodobieństwo obliczane według wzoru |C{\tiny i,d} |/|D| \\
+C{\tiny i,d} - zbiór próbek należących do i-klasy\\
+D - zbiór wszystkich próbek w danym węźle\\\\
+
+\texttt{Entropia} to średnia ilość informacji, przypadająca na pojedynczą wiadomość ze źródła informacji. Innymi słowy jest to średnia ważona ilości informacji niesionej przez pojedynczą wiadomość, gdzie wagami są prawdopodobieństwa nadania poszczególnych wiadomości opisane poprzez powyższy wzór. [9]
+
+\newpage
+
+\subsection{Opis środowiska programistycznego}
+
+\quad Poniższy kod programu przedstawiony na listingu przedstawia walidację krzyżową opisaną w podpunkcie 2.3. Jako poziom ufności alfa ($\alpha$) przyjęliśmy wartość równą 0,05.\\
+
+\begin{lstlisting} [caption={Protokół eksperymentalny walidacji krzyżowej dwukrotnie powtórzonej 5 razy. [10]},captionpos=b]
+   for i in range (len(X)):
+        data.append([X[i][20], X[i][19], X[i][15], X[i][3], X[i][7], 
+        X[i][2], X[i][17], X[i][11], X[i][4]])
+        ans.append(X[i][0])
+    dataTraining, dataTesting, ansTraining, ansTesting = train_test_split(data, 
+    ans, test_size = 0.5, random_state=2)
+
+    for crit in criteria:
+        print(crit)
+        for num in depth: 
+            clf = tree.DecisionTreeClassifier(criterion=crit, max_depth=num) 
+            print('max dept = ' + str(num))
+
+            clf = clf.fit(dataTraining, ansTraining)
+            score = cross_val_score(estimator=clf, X=dataTesting, y=ansTesting, 
+            cv=5, n_jobs=4)
+
+\end{lstlisting}
+Aby przeprowadzić testy statystyczne, wykorzystano również utworzone na podstawie zadanych parametrów z podpunktu 2.1 modele klasyfikacyjne.
+
+\begin{lstlisting} [caption={Wyznaczone modele klasyfikacyjne. [10]},captionpos=b]
+clf = {
+	'3gini': DecisionTreeClassifier(criterion='gini', max_depth=3),
+	'5gini': DecisionTreeClassifier(criterion='gini', max_depth=5),
+	'7gini': DecisionTreeClassifier(criterion='gini', max_depth=7),
+	'3entropy': DecisionTreeClassifier(criterion='entropy', max_depth=3),
+	'5entropy': DecisionTreeClassifier(criterion='entropy', max_depth=5),
+	'7entropy': DecisionTreeClassifier(criterion='entropy', max_depth=7),
+}
+
+\end{lstlisting}
+
+Obliczenie t-statystyki zostało zaimplementowane w oparciu o opisaną w podpunkcie 2.4 funkcję \texttt{ttest\_ind}. Działa ona dla zbioru od 1 do 12 najlepszych cech, gdzie uzyskano najlepsze wyniki klasyfikacji.\\
+
+\begin{lstlisting} [caption={Implementacja testu t-studenta [10].},captionpos=b]
+for i in range (trait):
+	for j in range (len(clf)):
+		for k in range (len(clf)):
+			t[i][j][k], p[i][j][k]=ttest_ind(results[j+i*6],results[k+i*6])
+
+\end{lstlisting}
+
+\newpage
+
+Na poniższym listingu znajduje się implementacja tabel przewagi, istotności i obserwacji końcowych.\\
+
+\begin{lstlisting} [caption={Implementacja tabel przewagi, istotności i obserwacji końcowych [10].},captionpos=b]
+for index, t in enumerate(t):
+	advantages[index][t > 0] = 1
+
+for index, p_value in enumerate(p):
+	importance[index][p_value <= alpha] = 1
+
+for i in range(trait):
+	betterStat.append(importance[i] * advantages[i])
+
+\end{lstlisting}
+
+\newpage
+
+\section{Wyniki badań eksperymentalnych}
+\subsection{Wyniki ewaluacji eksperymentalnej}
+\subsubsection{Tabele wyników}
+\quad W poniższej tabeli \ref{tab:najlepsze_wyniki}. znajdują się najlepsze uzyskane dokładności dla poszczególnych głębokości drzewa\\ 
+i typów kategoryzacji (Gini, Entropy). Najlepszy uzyskany wynik - 0,586 - osiągnięto dla klasyfikatora 7 gini i przy 12 cechach. 
+\begin{center}
+\begin{longtable}{|c|c|c|}
+\caption{Najlepsze uzyskane wyniki klasyfikacji}
+		\label{tab:najlepsze_wyniki}\\
+\hline
+\multicolumn{2}{|c|}{Klasyfikator}                                                         & \multicolumn{1}{l|}{\multirow{2}{*}{Najlepszy uzyskany wynik}} \\ \cline{1-2}
+\multicolumn{1}{|l|}{Maksymalna głębokość drzewa} & \multicolumn{1}{l|}{Typ kategoryzacji} & \multicolumn{1}{l|}{}                                          \\ \hline
+\multirow{2}{*}{3}                                & Gini                                   & 0,229                                                          \\ \cline{2-3} 
+                                                  & Entropy                                & 0,210                                                         \\ \hline
+\multirow{2}{*}{5}                                & Gini                                   & 0,399                                                          \\ \cline{2-3} 
+                                                  & Entropy                                & 0,399                                                          \\ \hline
+\multirow{2}{*}{7}                                & Gini                                   & 0,586                                                          \\ \cline{2-3} 
+                                                  & Entropy                                & 0,584                                                          \\ \hline
+        
+\end{longtable}
+\end{center}
+
+Poniższa tabela \ref{tab:zbiorcze_wyniki}. przedstawia wyniki ewaluacji eksperymentalnej dla każdego z następujących klasyfikatorów: 3 gini, 5 gini, 7 gini, 3 entropy, 5 entropy i 7 entropy. Każdy wiersz zawiera dane uzyskane podczas eksperymentu, czyli liczbę cech wykorzystanych podczas konkretnego badania ustalonych na podstawie rankingu cech z punktu \texttt{1.5} oraz średnią wartość klasyfikacji (\texttt{Accuracy}).
+\begin{center}
+\begin{longtable}{c|c|c|c|c|c|c|}
+\caption{Wyniki klasyfikacji dla poszczególnej liczby cech i klasyfikatorów}
+		\label{tab:zbiorcze_wyniki}\\
+\cline{2-7}
+                                  & \multicolumn{6}{c|}{Głębokość drzewa i kryterium podziału}   \\ \hline
+\multicolumn{1}{|c|}{Liczba cech} & 3 gini & 5 gini & 7 gini & 3 entropy & 5 entropy & 7 entropy \\ \hline
+\multicolumn{1}{|c|}{1}           & 0,134  & 0,134  & 0,134  & 0,134     & 0,134     & 0,134     \\ \hline
+\multicolumn{1}{|c|}{2}           & 0,186  & 0,192  & 0,192  & 0,189     & 0,192     & 0,192     \\ \hline
+\multicolumn{1}{|c|}{3}           & 0,178  & 0,248  & 0,260  & 0,190     & 0,253     & 0,260     \\ \hline
+\multicolumn{1}{|c|}{4}           & 0,196  & 0,291  & 0,361  & 0,205     & 0,314     & 0,373     \\ \hline
+\multicolumn{1}{|c|}{5}           & 0,187  & 0,325  & 0,428  & 0,189     & 0,334     & 0,434     \\ \hline
+\multicolumn{1}{|c|}{6}           & 0,191  & 0,313  & 0,451  & 0,188     & 0,318     & 0,439     \\ \hline
+\multicolumn{1}{|c|}{7}           & 0,209  & 0,362  & 0,521  & 0,193     & 0,358     & 0,499     \\ \hline
+\multicolumn{1}{|c|}{8}           & 0,216  & 0,374  & 0,544  & 0,198     & 0,363     & 0,536     \\ \hline
+\multicolumn{1}{|c|}{9}           & 0,227  & 0,387  & 0,565  & 0,210     & 0,385     & 0,557     \\ \hline
+\multicolumn{1}{|c|}{10}          & 0,229  & 0,383  & 0,575  & 0,210     & 0,399     & 0,561     \\ \hline
+\multicolumn{1}{|c|}{11}          & 0,229  & 0,383  & 0,574  & 0,210     & 0,399     & 0,560     \\ \hline
+\multicolumn{1}{|c|}{12}          & 0,227  & 0,398  & 0,586  & 0,207     & 0,389     & 0,584     \\ \hline
+\multicolumn{1}{|c|}{13}          & 0,227  & 0,394  & 0,560  & 0,207     & 0,388     & 0,567     \\ \hline
+\multicolumn{1}{|c|}{14}          & 0,227  & 0,393  & 0,568  & 0,207     & 0,387     & 0,566     \\ \hline
+\multicolumn{1}{|c|}{15}          & 0,227  & 0,383  & 0,561  & 0,204     & 0,378     & 0,562     \\ \hline
+\multicolumn{1}{|c|}{16}          & 0,227  & 0,381  & 0,565  & 0,204     & 0,378     & 0,565     \\ \hline
+\multicolumn{1}{|c|}{17}          & 0,227  & 0,394  & 0,577  & 0,204     & 0,391     & 0,583     \\ \hline
+\multicolumn{1}{|c|}{18}          & 0,227  & 0,394  & 0,577  & 0,204     & 0,391     & 0,577     \\ \hline
+\multicolumn{1}{|c|}{19}          & 0,227  & 0,395  & 0,573  & 0,204     & 0,391     & 0,576     \\ \hline
+\multicolumn{1}{|c|}{20}          & 0,227  & 0,399  & 0,574  & 0,204     & 0,384     & 0,583     \\ \hline
+        
+\end{longtable}
+\end{center}
+
+\begin{center}
+\begin{longtable}{c|c|c|c|c|c|c|}
+\caption{Wartości odchyleń standardowych dla poszczególnej liczby cech i klasyfikatorów}
+		\label{tab:wyniki_odchylen}\\
+\cline{2-7}
+                                  & \multicolumn{6}{c|}{Głębokość drzewa i kryterium podziału}   \\ \hline
+\multicolumn{1}{|c|}{Liczba cech} & 3 gini & 5 gini & 7 gini & 3 entropy & 5 entropy & 7 entropy \\ \hline
+\multicolumn{1}{|c|}{1}           & 0,03   & 0,08   & 0,14   & 0,02      & 0,07      & 0,14      \\ \hline
+\multicolumn{1}{|c|}{2}           & 0,02   & 0,06   & 0,12   & 0,01      & 0,05      & 0,11      \\ \hline
+\multicolumn{1}{|c|}{3}           & 0,05   & 0,08   & 0,12   & 0,04      & 0,08      & 0,12      \\ \hline
+\multicolumn{1}{|c|}{4}           & 0,06   & 0,10   & 0,14   & 0,06      & 0,10      & 0,14      \\ \hline
+\multicolumn{1}{|c|}{5}           & 0,07   & 0,12   & 0,16   & 0,07      & 0,12      & 0,16      \\ \hline
+\multicolumn{1}{|c|}{6}           & 0,08   & 0,13   & 0,18   & 0,07      & 0,13      & 0,18      \\ \hline
+\multicolumn{1}{|c|}{7}           & 0,08   & 0,14   & 0,19   & 0,08      & 0,14      & 0,19      \\ \hline
+\multicolumn{1}{|c|}{8}           & 0,08   & 0,14   & 0,20   & 0,08      & 0,14      & 0,20      \\ \hline
+\multicolumn{1}{|c|}{9}           & 0,09   & 0,15   & 0,21   & 0,08      & 0,14      & 0,21      \\ \hline
+\multicolumn{1}{|c|}{10}          & 0,09   & 0,15   & 0,21   & 0,08      & 0,15      & 0,21      \\ \hline
+\multicolumn{1}{|c|}{11}          & 0,09   & 0,15   & 0,21   & 0,08      & 0,15      & 0,21      \\ \hline
+\multicolumn{1}{|c|}{12}          & 0,09   & 0,15   & 0,21   & 0,08      & 0,14      & 0,21      \\ \hline
+\multicolumn{1}{|c|}{13}          & 0,08   & 0,14   & 0,20   & 0,08      & 0,14      & 0,21      \\ \hline
+\multicolumn{1}{|c|}{14}          & 0,08   & 0,14   & 0,20   & 0,07      & 0,14      & 0,20      \\ \hline
+\multicolumn{1}{|c|}{15}          & 0,08   & 0,13   & 0,19   & 0,07      & 0,13      & 0,19      \\ \hline
+\multicolumn{1}{|c|}{16}          & 0,07   & 0,13   & 0,18   & 0,07      & 0,12      & 0,18      \\ \hline
+\multicolumn{1}{|c|}{17}          & 0,07   & 0,12   & 0,17   & 0,06      & 0,12      & 0,17      \\ \hline
+\multicolumn{1}{|c|}{18}          & 0,06   & 0,11   & 0,15   & 0,06      & 0,10      & 0,15      \\ \hline
+\multicolumn{1}{|c|}{19}          & 0,05   & 0,09   & 0,13   & 0,05      & 0,09      & 0,13      \\ \hline
+\multicolumn{1}{|c|}{20}          & 0,04   & 0,07   & 0,10   & 0,04      & 0,07      & 0,10      \\ \hline
+        
+\end{longtable}
+\end{center}
+\newpage
+\subsubsection{Wykresy}
+\quad Wyniki z tabeli \ref{tab:zbiorcze_wyniki}. zostały również zaprezentowane za pomocą trzech wykresów. Poniższe wykresy przedstawiają zależność pomiędzy liczbą cech wykorzystanych podczas konkretnego badania ustalonych na podstawie rankingu cech z punktu \texttt{1.5} oraz średnią wartość klasyfikacji (\texttt{Accuracy}).\\  
+
+
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=17cm]{3 gini i 3 entropy.PNG}
+    \caption{Wyniki badań dla klasyfikatorów 3 gini i 3 entropy.}
+    \label{fig:3gini_i_3entropy}
+\end{figure}
+
+\newpage
+
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=17cm]{5 gini i 5 entropy.PNG}
+    \caption{Wyniki badań dla klasyfikatorów 5 gini i 5 entropy.}
+    \label{fig:5gini_i_5entropy}
+\end{figure}
+
+\newpage
+
+\begin{figure}[ht]
+    \centering
+    \noindent 
+    \vspace{.2cm}
+    \includegraphics[width=17cm]{7 gini i 7 entropy.PNG}
+    \caption{Wyniki badań dla klasyfikatorów 7 gini i 7 entropy.}
+    \label{fig:7gini_i_7entropy}
+\end{figure}
+
+\newpage
+
+\subsection{Wyniki testów statystycznych}
+
+\quad Poniższa tabela \ref{tab:przewaga}. zawiera informacje na temat tego, który klasyfikator z pary klasyfikatorów osiągnął lepszy wynik klasyfikacji. Liczba 0 oznacza, że klasyfikator z pierwszej kolumny jest statystycznie porównywalny lub gorszy od klasyfikatora z pierwszego wiersza, a liczba 1 oznacza, że jest on lepszy statystycznie.
+
+\begin{center}
+\begin{longtable}{c|c|c|c|c|c|c|}
+\caption{Tabela przewagi}
+		\label{tab:przewaga}\\
+\cline{2-7}
+                                & 3 gini & 5 gini & 7 gini & 3 entropy & 5 entropy & 7 entropy \\ \hline
+\multicolumn{1}{|c|}{3 gini}    & 0      & 0       & 0       & 1          &  0         &  0         \\ \hline
+\multicolumn{1}{|c|}{5 gini}    & 1       & 0      &  0      & 1          &  0         & 0          \\ \hline
+\multicolumn{1}{|c|}{7 gini}    & 1       & 1       & 0      & 1          & 1          & 0          \\ \hline
+\multicolumn{1}{|c|}{3 entropy} & 0       & 0       & 0       & 0         & 0          & 0          \\ \hline
+\multicolumn{1}{|c|}{5 entropy} & 1       & 0       & 0       & 1          & 0         & 0          \\ \hline
+\multicolumn{1}{|c|}{7 entropy} & 1       & 1       & 0       & 1          &  1         & 0         \\ \hline
+\end{longtable}
+\end{center}
+
+Poniższa tabela \ref{tab:istotnosc}. zawiera informacje o tym, czy różnica pomiędzy zadaną parą klasyfikatorów jest istotna statystycznie. Liczba 0 oznacza, że różnica między klasyfikatorem z pierwszej kolumny a klasyfikatorem\\ z pierwszego wiersza nie jest istotna, a liczba 1 oznacza, że jest ona istotna statystycznie.
+
+\begin{center}
+\begin{longtable}{c|c|c|c|c|c|c|}
+\caption{Tabela istotności}
+		\label{tab:istotnosc}\\
+\cline{2-7}
+                                & 3 gini & 5 gini & 7 gini & 3 entropy & 5 entropy & 7 entropy \\ \hline
+\multicolumn{1}{|c|}{3 gini}    & 0      & 1       & 1       & 1          & 1          & 1          \\ \hline
+\multicolumn{1}{|c|}{5 gini}    & 1       & 0      & 1       & 1          & 0          & 1          \\ \hline
+\multicolumn{1}{|c|}{7 gini}    & 1       & 1       & 0      & 1          & 1          & 0          \\ \hline
+\multicolumn{1}{|c|}{3 entropy} & 1       & 1       & 1       & 0         & 1          & 1          \\ \hline
+\multicolumn{1}{|c|}{5 entropy} & 1       & 0       & 0       & 1          & 0         & 0          \\ \hline
+\multicolumn{1}{|c|}{7 entropy} & 1       & 0       & 0       & 1          & 1          & 0         \\ \hline
+\end{longtable}
+\end{center}
+
+Poniższa tabela \ref{tab:wynikiKoncowe}. zawiera wyniki końcowe dla najlepszych 12 cech, która pokazuje dla każdego z klasyfikatorów ten klasyfikator, od którego jest on statystycznie znacząco lepszy. Wartości w tej tabeli są iloczynami wartości poszczególnych komórek z tabel przewagi i istotności.
+
+\begin{center}
+\begin{longtable}{c|c|c|c|c|c|c|}
+\caption{Tabela wyników końcowych}
+		\label{tab:wynikiKoncowe}\\
+\cline{2-7}
+                                & 3 gini & 5 gini & 7 gini & 3 entropy & 5 entropy & 7 entropy \\ \hline
+\multicolumn{1}{|c|}{3 gini}    & 0      & 0      & 0       & 1          & 0          & 0          \\ \hline
+\multicolumn{1}{|c|}{5 gini}    & 1       & 0      & 0       & 1          & 0          & 0       \\ \hline
+\multicolumn{1}{|c|}{7 gini}    & 1       & 1       & 0      & 1          & 1          & 0          \\ \hline
+\multicolumn{1}{|c|}{3 entropy} & 0       & 0       & 0       & 0         & 0           & 0          \\ \hline
+\multicolumn{1}{|c|}{5 entropy} & 1       & 0       & 0       & 1          & 0         & 0          \\ \hline
+\multicolumn{1}{|c|}{7 entropy} & 1       & 0       & 0       & 1          & 1          & 0         \\ \hline
+\end{longtable}
+\end{center}
+\newpage
+
+\subsection{Dyskusja otrzymanych wyników}
+\quad Na podstawie wykonanych badań oraz analizy ich wyników wyłoniony został zestaw cech, które pozwalają na uzyskanie najwyżej ze statystycznego punktu widzenia skuteczności klasyfikatora algorytmu \texttt{CART} dla problemu wspomagania diagnozowania białaczek u dzieci:
+\begin{itemize}
+    \item Typ kategoryzacji - \texttt{GINI}
+    \item Liczba najistotniejszych cech z rankingu cech - \texttt{12}
+    \item Głębokość drzewa - \texttt{7}
+\end{itemize}
+
+Przedstawiony zestaw parametrów umożliwił uzyskanie średniej skuteczności na poziomie 58,6\%.\\ Algorytm \texttt{CART} umożliwił rozwiązanie problemu diagnozowania białaczek u dzieci z całkiem wysoką skutecznością, pomimo tego, że nie posiadaliśmy zbyt wielu danych do analizy (20 klas, 410 zdiagnozowanych przypadków).
+
+Dla małej głębokości drzewa (wartość 3) lepszą jakość klasyfikacji uzyskał klasyfikator z wykorzystaniem kryterium \texttt{Gini} o około 2,5\%. Dla głębokości drzewa \texttt{5} nie widać znaczących różnych pomiędzy wynikami dla dwóch różnych kryteriów podziału drzewa, z wyjątkiem sytuacji, gdzie klasyfikator \texttt{Entropy} uzyskał lepsze wyniki klasyfikacji dla liczby cech z przedziału [9, 12] o około 1,5\%. 
+
+Dla największej wartości głębokości drzewa \texttt{7} nie widać znaczących różnic w przebiegu wykresów. Dla tej głębokości drzewa uzyskano najlepszą wartość w całym eksperymencie dla 12 najlepszych cech dla kryterium \texttt{Gini} (0,586), jak i kryterium \texttt{Entropy} (0,584).
+
+Dla każdego kryterium i głębokości drzewa stabilizacja otrzymywanych wyników klasyfikacji następuje przy 9 najlepszych cechach z rankingu cech. Oznacza to, że przy tej liczbie dodawanie kolejnych cech nie polepsza działania algorytmu, a jedynie utrzymuje na mniej więcej jednakowym poziomie.
+
+Podczas działania algorytmu obliczenia dla małej liczby cech (z przedziału [1,7]) były znacznie szybsze niż dla dużej liczby cech (z przedziału [15,20]). Wynika to z tego, że algorytm ma więcej danych do nauki.
+\newpage
+
+\section{Podsumowanie i wnioski}
+\quad Celem realizowanego przez nas projektu było nabycie umiejętności zastosowania algorytmu klasyfikacji nadzorowanej (w naszym przypadku algorytmu drzewa decyzyjnego) w zadaniu diagnozowania białaczek u dzieci. Ten proces wymagał od nas odpowiedniego wybrania cech, dzięki którym wybrany algorytm mógł rozpoznać chorobę u pacjenta. Dzięki danym rzeczywistym oceniliśmy jakość klasyfikacji i sprawdziliśmy, \\w jaki sposób ta jakość zależy od liczby atrybutów wykorzystanych do skonstruowania modelu klasyfikacyjnego. 
+
+Udało nam się zrealizować wszystkie założenia z podpunktu 1.1. W trakcie wykonywania algorytmu warto zastosować funkcję mierzącą czas jego wykonywania, której wyniki działania pozwoliłyby na stworzenie tabeli i wykresów przedstawiających szybkość pracy algorytmu dla różnej liczby cech i kryteriów podziału drzewa.\\\\\\\\\\\\\\\\\\
+
+
+\begin{thebibliography}{}
+\bibitem{selekcja}\textit{http://gdudek.el.pcz.pl/index.php/zainteresowania-naukowe/10-selekcja-cech}, Selekcja cech.
+\bibitem{chi-kwadrat}\textit{Ocena testów sprawdzających wiedzę studenta metodami testowania hipotez statystycznych. modelowanie metodą chi-kwadrat}, Rajs R., Krosno, 2006.
+\bibitem{chi-kwadrat-wzor}\textit{Statystyka praktyczna}, Starzyńska W., wyd. PWN, Warszawa, 2000.
+\bibitem {walidacja-krzyzowa}\textit{https://www.ii.pwr.edu.pl/~zieba/Lista5.pdf}
+\bibitem{drzewa}\textit{https://mfiles.pl/pl/index.php/Drzewo\_decyzyjne}, Drzewo decyzyjne.
+\bibitem {metoda-cart}\textit{http://fizyka.umk.pl/publications/kmk/Prace-Mgr/08-Wilczewski-InTrees-drzewa-decyzji.pdf}
+\bibitem {drzewa-klasyfikacyjne}\textit{https://www.statsoft.pl/textbook/stathome.html}
+\bibitem {drzewa-regresyjne}\textit{https://predictivesolutions.pl/wykorzystanie-drzew-regresyjnych-do-analizy-wartosci-zakupow-cz-2}
+\bibitem {kryteria-podzialu}\textit{Wykorzystanie drzew decyzyjnych oraz ekstrakcji reguł
+do klasyfikacji regułowej podatników}, Budziński R., Misztal L., Szczecin, 2010.
+\bibitem {parowe-testy}\textit{https://metsi.github.io/2020/04/03/kod4.html}, Parowe testy statystyczne.
+\end{thebibliography}
+\end{document}
+
+
